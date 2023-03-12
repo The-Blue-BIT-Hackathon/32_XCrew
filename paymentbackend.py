@@ -9,15 +9,13 @@ Update: Used qrcode library instead to scan UPI id
 """
 import mysql.connector
 global First_User, users, user, mydba
-user1 = "root"
-password1 = "1234"
-database1 = "trial1"
+
 # Connect to MySQL database
 mydb = mysql.connector.connect(
     host="localhost",
-    user=user1,
-    password=password1,
-    database=database1
+    user="",
+    password="",
+    database=""
 )
 
 
