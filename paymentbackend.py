@@ -1,28 +1,38 @@
 """
 Backend program for payments system. 
 Users will pay real money for credits using UPI, these credits will be used for everyday purchases
-Stores Username, password, balance in Mysql. (Db can be changed to PostgreSQL)
+Stores Username, password, balance in Mysql. 
 Requirement: SQL server connection (Input data of name/username, password, account balance/ AmountPayed)
 
 Pending steps: UPI integration for buing credits and Frontend page for payments
 Update: Used qrcode library instead to scan UPI id
 """
 import mysql.connector
+global First_User, users, user, mydba
 user1 = "root"
 password1 = "1234"
 database1 = "trial1"
+# Connect to MySQL database
+mydb = mysql.connector.connect(
+    host="localhost",
+    user=user1,
+    password=password1,
+    database=database1
+)
 
-user = []
-global First_User, users, AmountPayed
+
+
 First_User = False
 users = []
+user = []
+
 
 
 def UPIpayment():
     import os
     import qrcode
 
-    upi_id = input("Enter seller's UPI id: ")
+    upi_id = "examplename@oksbi"
 
     # Generate QR code for UPI id
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -31,14 +41,26 @@ def UPIpayment():
     img = qr.make_image(fill_color="black", back_color="white")
     img.save("seller_qr.png")
 
-    """# Display QR code in command line
+
+
+    # Display QR code in command line
     if os.name == 'nt':
         os.system('start seller_qr.png')
     elif os.name == 'posix':
-        os.system('open seller_qr.png')"""
+        os.system('open seller_qr.png')
 
 
-
+def add_credits(users, username, password, AmountPayed):
+    i = []
+    for j in users:
+        if j[0] == username:
+            i = j
+            break
+    if i != []:
+        if i[1] == password:
+            i[2] += AmountPayed
+    else:
+        print("\nIncorrect Password")
 
 
 
@@ -51,8 +73,7 @@ def first_run(users):
         username, password, balance = user[0], user[1], user[2]
         mycursor.execute(
             f"INSERT INTO users VALUES ('{username}','{password}','{balance}');")
-    print("Table done! ")
-
+    
 
 
 
@@ -92,7 +113,7 @@ def save_users():
         sql = f"UPDATE users SET password='{new_password}', balance={new_balance} WHERE username='{u}';"
         mycursor.execute(sql)
 
-    print("change(s) made.")
+   
 
 
 
@@ -132,32 +153,29 @@ def deduct_money(users, username, amount):
 
 
 
-def add_user(users, username, password):
+def add_user(users, username, password, AmountPayed):
     mycursor = mydb.cursor()
     """
     Add a new user with 
     """
-    track = f"['{username}',"
-    if track not in str(users):
-        users.append([username, password, 10000])
+    i = []
+    for j in users:
+        if j[0] == username:
+            i = j
+            break
+    
+    if i == []:
+        users.append([username, password, AmountPayed])
         if users != []:
-            mycursor.execute(
-                f"INSERT INTO users values('{username}','{password}','10000');")
-        print("New user added!")
+            mycursor.execute(f"INSERT INTO users values('{username}','{password}','{AmountPayed}');")
+        print("\nNew user added!")
 
     else:
-        print("User already exists!")
+        print("\nError: User already exists!")
 
 
 
 
-# Connect to MySQL database
-mydb = mysql.connector.connect(
-    host="localhost",
-    user=user1,
-    password=password1,
-    database=database1
-)
 
 # Load user data from file
 try:
@@ -166,29 +184,43 @@ except:
     pass
 if users == []:
     First_User = True
-
+print(users)
 # Prompt user to log in or create a new account
 while True:
-    print("1. Log in")
+    print("\n1.Pay using credits")
     print("2. Create new account")
-    print("3. Exit")
+    print("3. Scan QR to add credits")
+    print("4. Exit")
     choice = input("Enter choice: ")
 
     if choice == "1" and users != []:
-        username = input("Enter username: ")
+        username = input("\nEnter username: ")
         password = input("Enter password: ")
         if login(users, username, password):
-            amount = int(input("Enter amount to pay: "))
+            amount = int(input("\nEnter amount to pay: "))
             deduct_money(users, username, amount)
         else:
-            print("Invalid username or password.")
+            print("Error: Invalid username or password.")
     elif choice == "2" or users == []:
-        print("\n CREATING NEW ACCOUNT")
+        print("\nCREATING NEW ACCOUNT")
         username = input("Enter new username: ")
         password = input("Enter new password: ")
-        add_user(users, username, password)
+
+        
+        AmountPayed = int(input(("\nEnter amount you will be paying: ")))
+        UPIpayment()
+        add_user(users, username, password, AmountPayed)
 
     elif choice == '3':
+        print("\nCREDITS PAYMENT")
+        username = input("Enter new username: ")
+        password = input("Enter new password: ")
+        AmountPayed = int(input(("\nEnter amount you will be paying: ")))
+        add_credits(users, username, password, AmountPayed)
+        
+        UPIpayment()
+        
+    elif choice == '4':
         print(users)
         if First_User == True:
             first_run(users)
